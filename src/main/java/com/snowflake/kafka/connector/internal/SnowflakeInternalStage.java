@@ -89,19 +89,18 @@ public class SnowflakeInternalStage extends Logging {
           conn.getSfSession(),
           new SFStatement(conn.getSfSession())
         );
-        // If the backend is not GCP, we cache the credential. Otherwise throw error.
         // transfer metadata list must only have one element
         SnowflakeFileTransferMetadataV1 fileTransferMetadata =
           (SnowflakeFileTransferMetadataV1) agent.getFileTransferMetadatas().get(0);
-        if (fileTransferMetadata.getStageInfo().getStageType() != StageInfo.StageType.GCS)
+        if (fileTransferMetadata.getStageInfo().getStageType() == StageInfo.StageType.LOCAL_FS)
+        {
+          throw SnowflakeErrors.ERROR_5017.getException();
+        }
+        else
         {
           // Overwrite the credential to be used
           credential = new SnowflakeMetadataWithExpiration(fileTransferMetadata, System.currentTimeMillis());
           storageInfoCache.put(stage, credential);
-        }
-        else
-        {
-          throw SnowflakeErrors.ERROR_5017.getException();
         }
       }
 
@@ -127,7 +126,7 @@ public class SnowflakeInternalStage extends Logging {
       {
         // If this api encounters error, invalid the cached credentials
         // Caller will retry this function
-        logWarn("uploadWithoutConnection encountered an error");
+        logWarn("uploadWithoutConnection encountered an error:{} for filePath:{}" + t.getMessage(), fullFilePath);
         storageInfoCache.remove(stage);
         throw t;
       }

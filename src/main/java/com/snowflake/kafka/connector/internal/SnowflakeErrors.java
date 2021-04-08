@@ -348,7 +348,7 @@ public enum SnowflakeErrors
   ERROR_5017(
     "5017",
     "Invalid api call to cached put",
-    "Cached put only support AWS and Azure. However GCP was found as storage"
+    "Cached put only support AWS, Azure and GCS."
   ),
   ERROR_5018(
     "5018",

@@ -648,6 +648,7 @@ public class SnowflakeConnectionServiceV1 extends Logging
   }
 
   @Override
+  @Deprecated
   public void put(final String stageName, final String fileName,
                   final String content)
   {
@@ -680,25 +681,17 @@ public class SnowflakeConnectionServiceV1 extends Logging
     {
       stageType = internalStage.getStageType(stageName);
     }
-    // Normal upload for GCS, cached upload for Azure and S3.
-    if (stageType == StageInfo.StageType.GCS)
+    try
     {
-      put(stageName, fileName, content);
-    }
-    else if (stageType == StageInfo.StageType.AZURE || stageType == StageInfo.StageType.S3)
+      InternalUtils.backoffAndRetry(telemetry,
+        () ->
+        {
+          internalStage.putWithCache(stageName, fileName, content);
+          return true;
+        });
+    } catch (Exception e)
     {
-      try
-      {
-        InternalUtils.backoffAndRetry(telemetry,
-          () ->
-          {
-            internalStage.putWithCache(stageName, fileName, content);
-            return true;
-          });
-      } catch (Exception e)
-      {
-        throw SnowflakeErrors.ERROR_2011.getException(e);
-      }
+      throw SnowflakeErrors.ERROR_2011.getException(e);
     }
   }
 
